@@ -12,7 +12,7 @@ const args = yargs
         },
         warmth: {
             type: "number",
-            default: 300,
+            default: 350,
             alias: "w",
             desc: "Set the temperature of the light, values between 250 and 500 work fine"
         },
