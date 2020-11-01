@@ -27,8 +27,8 @@ const tradfri = async (input: Input) => {
         console.error("Brightness must be within 0 and 254");
         process.exit(1);
     }
-    const client = MQTT.connect(`tcp://${input["broker-address"]}`);
-    client.on("connect", () => {impl(client, input)});
+    const client = await MQTT.connectAsync(`tcp://${input["broker-address"]}`);
+    impl(client, input);
 }
 
 export default tradfri;
