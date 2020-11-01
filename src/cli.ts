@@ -36,4 +36,14 @@ const args = yargs
         },
     }).argv;
 
+const checkNumberArg = (name: string, value: number) => {
+    if (Number.isNaN(value)) {
+        console.error(`Argument to --${name} is not a number.`);
+        process.exit(1);
+    }
+};
+
+checkNumberArg("warmth", args.warmth);
+checkNumberArg("brightness", args.brightness);
+
 tradfri(args);
