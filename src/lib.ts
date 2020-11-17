@@ -1,7 +1,7 @@
 import MQTT from "async-mqtt";
 interface Input {
     brightness: number;
-    state: string;
+    state: "on" | "off" | "toggle";
     warmth: number;
     "friendly-name": string;
     "broker-address": string;
