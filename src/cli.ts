@@ -48,4 +48,4 @@ const checkNumberArg = (name: string, value: number) => {
 checkNumberArg("warmth", args.warmth);
 checkNumberArg("brightness", args.brightness);
 
-tradfri(args);
+tradfri.send(args);

@@ -22,7 +22,7 @@ const impl = async (client: MQTT.AsyncMqttClient, input: Input) => {
     }
 };
 
-const tradfri = async (input: Input) => {
+const send = async (input: Input) => {
     if (input.brightness > 254 || input.brightness < 0) {
         console.error("Brightness must be within 0 and 254");
         process.exit(1);
@@ -31,4 +31,6 @@ const tradfri = async (input: Input) => {
     impl(client, input);
 }
 
-export default tradfri;
+export default {
+    send
+};

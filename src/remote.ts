@@ -43,7 +43,7 @@ const processAction = (action: Action) => {
     switch (action) {
         case Action.Toggle:
             log(processAction, "Toggling lights...");
-            tradfri({
+            tradfri.send({
                 state: "toggle",
                 warmth: 350,
                 brightness: 254,
