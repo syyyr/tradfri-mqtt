@@ -48,8 +48,12 @@ const checkNumberArg = (name: string, value: number) => {
 checkNumberArg("warmth", args.warmth);
 checkNumberArg("brightness", args.brightness);
 
-(async () => tradfri.send({
-    client: await tradfri.createClient(args["broker-address"]),
-    type: "set",
-    ...args
-}))();
+(async () => {
+    const client = await tradfri.createClient(args["broker-address"]);
+    await tradfri.send({
+        type: "set",
+        client,
+        ...args
+    });
+    client.end();
+})();
