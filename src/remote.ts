@@ -1,7 +1,8 @@
 import yargs from "yargs"
 import MQTT from "async-mqtt"
-import tradfri, {Action, LightState} from "./lib"
 import log from "./log"
+import tradfri, {Action, LightState} from "./lib"
+import ringPhone from "./ring_phone"
 
 const args = yargs
     .usage("Usage: tradfri-remote -n <remote-name>")
@@ -117,7 +118,9 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
         case Action.BrightnessDown:
             changeBrightness(client, action);
             break;
-
+        case Action.BrightnessUpHold:
+            ringPhone();
+            break;
         default:
             log(processAction, `Ignoring '${action}'.`);
             break;
