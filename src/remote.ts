@@ -111,8 +111,7 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
                 });
             });
             break;
-        case Action.Left:
-        case Action.Right:
+        default:
             log(processAction, `Ignoring '${action}'.`);
             break;
     }
