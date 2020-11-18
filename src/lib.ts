@@ -23,6 +23,8 @@ type SubscribeArgs = MQTTVars & ({
 
 enum Action {
     Toggle = "toggle",
+    // WARNING: don't use this one, because it always fires after Toggle and there's no "release event"
+    __ToggleHold = "toggle_hold",
     Left = "arrow_left_click",
     Right = "arrow_right_click",
     BrightnessUp = "brightness_up_click",
@@ -32,9 +34,10 @@ enum Action {
     ArrowRightHold = "arrow_right_hold",
     ArrowRightRelease = "arrow_right_release",
     BrightnessUpHold = "brightness_up_hold",
-    BrightnessUpRelease= "brightness_up_release",
+    BrightnessUpRelease = "brightness_up_release",
     BrightnessDownHold = "brightness_down_hold",
-    BrightnessDownRelease="brightness_down_release",
+    BrightnessDownRelease ="brightness_down_release",
+
 };
 
 const isAction = (toCheck: string): toCheck is Action => {
