@@ -1,6 +1,7 @@
 import yargs from "yargs"
 import MQTT from "async-mqtt"
 import tradfri, {Action, LightState} from "./lib"
+import log from "./log"
 
 const args = yargs
     .usage("Usage: tradfri-remote -n <remote-name>")
@@ -19,10 +20,6 @@ const args = yargs
             desc: "Set the address of the broker"
         },
     }).argv;
-
-const log = (fn: Function, msg: string) => {
-    console.log(`${fn.name}(): ${msg}`);
-};
 
 const brightnessUp = (oldState: LightState) => {
     const newState = {...oldState};
