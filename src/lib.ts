@@ -10,6 +10,12 @@ type LightState = {
     warmth: number;
 }
 
+type SendArgs = MQTTVars & LightState;
+type SubscribeArgs = MQTTVars & ({
+    subType: "remote";
+    callback: (action: Action) => void
+});
+
 enum Action {
     Toggle = "toggle",
     Left = "arrow_left_click",
@@ -22,17 +28,11 @@ const isAction = (toCheck: string): toCheck is Action => {
     return Object.values(Action).includes(toCheck as Action);
 };
 
-type SendInput = MQTTVars & LightState;
-type SubscribeInput = MQTTVars & ({
-    subType: "remote";
-    callback: (action: Action) => void
-});
-
 const createClient = (brokerAddress: string) => {
     return MQTT.connectAsync(`tcp://${brokerAddress}`);
 };
 
-const send = async (input: SendInput) => {
+const send = async (input: SendArgs) => {
     if (input.brightness > 254 || input.brightness < 0) {
         console.error("Brightness must be within 0 and 254");
         process.exit(1);
@@ -45,14 +45,14 @@ const send = async (input: SendInput) => {
     await input.client.publish(`zigbee2mqtt/${input["friendly-name"]}/set`, JSON.stringify(message));
 };
 
-const convertSubType = (input: SubscribeInput["subType"]) => {
+const convertSubType = (input: SubscribeArgs["subType"]) => {
     switch (input) {
     case "remote":
         return "action";
     }
 };
 
-const subscribe = async (input: SubscribeInput) => {
+const subscribe = async (input: SubscribeArgs) => {
     const userTopic = `zigbee2mqtt/${input["friendly-name"]}/${convertSubType(input.subType)}`;
 
     const callback = (topic: string, msg: Buffer) => {
