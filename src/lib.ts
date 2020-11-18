@@ -25,8 +25,16 @@ enum Action {
     Toggle = "toggle",
     Left = "arrow_left_click",
     Right = "arrow_right_click",
+    BrightnessUp = "brightness_up_click",
     BrightnessDown = "brightness_down_click",
-    BrightnessUp = "brightness_up_click"
+    ArrowLeftHold = "arrow_left_hold",
+    ArrowLeftRelease = "arrow_left_release",
+    ArrowRightHold = "arrow_right_hold",
+    ArrowRightRelease = "arrow_right_release",
+    BrightnessUpHold = "brightness_up_hold",
+    BrightnessUpRelease= "brightness_up_release",
+    BrightnessDownHold = "brightness_down_hold",
+    BrightnessDownRelease="brightness_down_release",
 };
 
 const isAction = (toCheck: string): toCheck is Action => {
