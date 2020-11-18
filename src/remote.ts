@@ -56,61 +56,71 @@ const brightnessDown = (oldState: LightState) => {
     return newState;
 }
 
+const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
+    tradfri.send({
+        type: "set",
+        state: "toggle",
+        warmth: 350,
+        brightness: 254,
+        "friendly-name": "ikea",
+        client
+    });
+    log(processAction, "Lights toggled.");
+};
+
+const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action) => {
+    // This promise serves the purpose of synchronizing everything. I need to wait until I get the response
+    // from the subscription.
+    await new Promise(async (resolve) => {
+        const sub = await tradfri.subscribe({
+            client,
+            subType: "light",
+            "friendly-name": "ikea",
+            callback: async (state) => {
+                // Need an IIFE here, so that the promise always gets resolved
+                (async () => {
+                    sub.unsubscribe();
+                    if (state.state === "OFF") {
+                        log(processAction, "Light is off, not doing anything.");
+                        return;
+                    }
+
+                    const newState = action === Action.BrightnessUp ? brightnessUp(state) : brightnessDown(state);
+                    if (newState.brightness === state.brightness) {
+                        log(processAction, `Brightness is already at ${newState.brightness}, not doing anything.`);
+                        return;
+                    }
+
+                    await tradfri.send({
+                        type: "set",
+                        client,
+                        "friendly-name": "ikea",
+                        ...newState
+                    });
+                    log(processAction, `Changing brightness to ${newState.brightness}.`);
+                })();
+                resolve();
+            }
+        });
+        tradfri.send({
+            type: "get",
+            "friendly-name": "ikea",
+            client
+        });
+    });
+}
+
+
 const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
     switch (action) {
         case Action.Toggle:
-            tradfri.send({
-                type: "set",
-                state: "toggle",
-                warmth: 350,
-                brightness: 254,
-                "friendly-name": "ikea",
-                client
-            });
-            log(processAction, "Lights toggled.");
+            toggleLights(client, action);
             break;
         case Action.BrightnessUp:
         case Action.BrightnessDown:
-            // This promise serves the purpose of synchronizing everything. I need to wait until I get the responsive
-            // from the subscription.
-            await new Promise(async (resolve) => {
-                const sub = await tradfri.subscribe({
-                    client,
-                    subType: "light",
-                    "friendly-name": "ikea",
-                    callback: async (state) => {
-                        // Need an IIFE here, so that the promise always gets resolved
-                        (async () => {
-                            sub.unsubscribe();
-                            if (state.state === "OFF") {
-                                log(processAction, "Light is off, not doing anything.");
-                                return;
-                            }
-
-                            const newState = action === Action.BrightnessUp ? brightnessUp(state) : brightnessDown(state);
-                            if (newState.brightness === state.brightness) {
-                                log(processAction, `Brightness is already at ${newState.brightness}, not doing anything.`);
-                                return;
-                            }
-
-                            await tradfri.send({
-                                type: "set",
-                                client,
-                                "friendly-name": "ikea",
-                                ...newState
-                            });
-                            log(processAction, `Changing brightness to ${newState.brightness}.`);
-                        })();
-                        resolve();
-                    }
-                });
-                tradfri.send({
-                    type: "get",
-                    "friendly-name": "ikea",
-                    client
-                });
-            });
+            changeBrightness(client, action);
             break;
+
         default:
             log(processAction, `Ignoring '${action}'.`);
             break;
