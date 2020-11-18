@@ -1,6 +1,6 @@
 import yargs from "yargs"
 import MQTT from "async-mqtt"
-import tradfri, {Action} from "./lib"
+import tradfri, {Action, LightState} from "./lib"
 
 const args = yargs
     .usage("Usage: tradfri-remote -n <remote-name>")
@@ -24,11 +24,43 @@ const log = (fn: Function, msg: string) => {
     console.log(`${fn.name}(): ${msg}`);
 };
 
-const processAction = (client: MQTT.AsyncMqttClient, action: Action) => {
+const brightnessUp = (oldState: LightState) => {
+    const newState = {...oldState};
+    // This could use a switch integral division, but this is much clearer...
+    if (oldState.brightness > 0) {
+        newState.brightness = 85;
+    }
+    if (oldState.brightness >= 85) {
+        newState.brightness = 170;
+    }
+    if (oldState.brightness >= 170) {
+        newState.brightness = 254;
+    }
+
+    return newState;
+}
+
+const brightnessDown = (oldState: LightState) => {
+    const newState = {...oldState};
+    // This could use a switch integral division, but this is much clearer...
+    if (oldState.brightness > 0) {
+        newState.brightness = 85;
+    }
+    if (oldState.brightness > 85) {
+        newState.brightness = 85;
+    }
+    if (oldState.brightness > 170) {
+        newState.brightness = 170;
+    }
+
+    return newState;
+}
+
+const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
     switch (action) {
         case Action.Toggle:
-            log(processAction, "Toggling lights...");
             tradfri.send({
+                type: "set",
                 state: "toggle",
                 warmth: 350,
                 brightness: 254,
@@ -39,6 +71,46 @@ const processAction = (client: MQTT.AsyncMqttClient, action: Action) => {
             break;
         case Action.BrightnessUp:
         case Action.BrightnessDown:
+            // This promise serves the purpose of synchronizing everything. I need to wait until I get the responsive
+            // from the subscription.
+            await new Promise(async (resolve) => {
+                const sub = await tradfri.subscribe({
+                    client,
+                    subType: "light",
+                    "friendly-name": "ikea",
+                    callback: async (state) => {
+                        // Need an IIFE here, so that the promise always gets resolved
+                        (async () => {
+                            sub.unsubscribe();
+                            if (state.state === "OFF") {
+                                log(processAction, "Light is off, not doing anything.");
+                                return;
+                            }
+
+                            const newState = action === Action.BrightnessUp ? brightnessUp(state) : brightnessDown(state);
+                            if (newState.brightness === state.brightness) {
+                                log(processAction, `Brightness is already at ${newState.brightness}, not doing anything.`);
+                                return;
+                            }
+
+                            await tradfri.send({
+                                type: "set",
+                                client,
+                                "friendly-name": "ikea",
+                                ...newState
+                            });
+                            log(processAction, `Changing brightness to ${newState.brightness}.`);
+                        })();
+                        resolve();
+                    }
+                });
+                tradfri.send({
+                    type: "get",
+                    "friendly-name": "ikea",
+                    client
+                });
+            });
+            break;
         case Action.Left:
         case Action.Right:
             log(processAction, `Ignoring '${action}'.`);
@@ -56,8 +128,10 @@ const main = async () => {
         client,
         "friendly-name": subTo,
         subType: "remote",
-        callback: (action: Action) => {
-            processAction(client, action);
+        callback: async (action: Action) => {
+            log(main, `Processing '${action}'...`);
+            await processAction(client, action);
+            log(main, `Processing '${action}' done.`);
         }
     });
     log(main, "Subscribed.");

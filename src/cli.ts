@@ -5,10 +5,10 @@ const args = yargs
     .wrap(yargs.terminalWidth())
     .options({
         state: {
-            choices: ["on", "off", "toggle"],
+            choices: ["ON", "OFF", "toggle"],
             // The cast needs to be otherwise typing is not correct
             // https://github.com/yargs/yargs/issues/1641
-            default: "toggle" as "on" | "off" | "toggle",
+            default: "toggle" as "ON" | "OFF" | "toggle",
             alias: "s",
             desc: "Set the light state"
         },
@@ -50,5 +50,6 @@ checkNumberArg("brightness", args.brightness);
 
 (async () => tradfri.send({
     client: await tradfri.createClient(args["broker-address"]),
+    type: "set",
     ...args
 }))();
