@@ -9,7 +9,7 @@ type MQTTVars = {
 type LightState = {
     brightness: number;
     state: "ON" | "OFF" | "toggle";
-    warmth: number;
+    color_temp: number;
 }
 
 type SendArgs = MQTTVars & ((LightState & {type: "set"}) | {type: "get"});
@@ -63,7 +63,7 @@ const send = async (input: SendArgs) => {
             message = {
                 brightness: input.brightness,
                 state: input.state,
-                color_temp: input.warmth
+                color_temp: input.color_temp
             };
             break;
         case "get":

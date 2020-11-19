@@ -58,7 +58,7 @@ const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
     tradfri.send({
         type: "set",
         state: "toggle",
-        warmth: 350,
+        color_temp: 350,
         brightness: 254,
         "friendly-name": "ikea",
         client

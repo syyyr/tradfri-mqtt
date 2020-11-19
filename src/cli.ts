@@ -53,7 +53,10 @@ checkNumberArg("brightness", args.brightness);
     await tradfri.send({
         type: "set",
         client,
-        ...args
+        brightness: args.brightness,
+        state: args.state,
+        color_temp: args.warmth,
+        "friendly-name": args["friendly-name"]
     });
     client.end();
 })();
