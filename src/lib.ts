@@ -19,6 +19,9 @@ type SubscribeArgs = MQTTVars & ({
 } | {
     subType: "light";
     callback: (state: LightState) => void;
+} | {
+    subType: "announce";
+    callback: () => void;
 });
 
 enum Action {
@@ -40,6 +43,14 @@ enum Action {
 
 };
 
+type Announce = {
+    message: "announce";
+    meta: {
+        friendly_name: string;
+    };
+    type: "device_announced";
+}
+
 const isAction = (toCheck: string): toCheck is Action => {
     return Object.values(Action).includes(toCheck as Action);
 };
@@ -47,6 +58,14 @@ const isAction = (toCheck: string): toCheck is Action => {
 const isLightState = (toCheck: Object): toCheck is LightState => {
     return typeof (toCheck as LightState).state !== "undefined";
 };
+
+const isAnnounce = (toCheck: Object): toCheck is Announce => {
+    const announceObj = toCheck as Announce;
+    return announceObj.message === "announce" &&
+        announceObj.type === "device_announced" &&
+        typeof announceObj.meta === "object" &&
+        typeof announceObj.meta.friendly_name === "string";
+}
 
 const createClient = (brokerAddress: string) => {
     return MQTT.connectAsync(`tcp://${brokerAddress}`);
@@ -76,17 +95,19 @@ const send = async (input: SendArgs) => {
     await input.client.publish(`zigbee2mqtt/${input["friendly-name"]}/${input.type}`, JSON.stringify(message));
 };
 
-const convertSubType = (input: SubscribeArgs["subType"]): string => {
+const convertSubType = (input: SubscribeArgs["subType"], friendlyName: SubscribeArgs["friendly-name"]): string => {
     switch (input) {
         case "remote":
-            return "/action";
+            return `${friendlyName}/action`;
         case "light":
-            return "";
+            return `${friendlyName}`;
+        case "announce":
+            return `bridge/log`;
     }
 };
 
 const subscribe = async (input: SubscribeArgs) => {
-    const userTopic = `zigbee2mqtt/${input["friendly-name"]}${convertSubType(input.subType)}`;
+    const userTopic = `zigbee2mqtt/${convertSubType(input.subType, input["friendly-name"])}`;
 
     const callback = (topic: string, msg: Buffer) => {
         if (topic === userTopic) {
@@ -99,20 +120,32 @@ const subscribe = async (input: SubscribeArgs) => {
                     }
                     break;
                 case "light":
-                    let obj;
+                    let lightStateObj;
                     try {
-                        obj = JSON.parse(msgString);
+                        lightStateObj = JSON.parse(msgString);
                     } catch (err) {
                         break;
                     }
 
-                    if (isLightState(obj)) {
-                        input.callback(obj);
+                    if (isLightState(lightStateObj)) {
+                        input.callback(lightStateObj);
                         return;
                     }
                     break;
+                case "announce":
+                    let announceObj;
+                    try {
+                        announceObj = JSON.parse(msgString);
+                    } catch (err) {
+                        break;
+                    }
+
+                    if (isAnnounce(announceObj)) {
+                        input.callback();
+                        return;
+                    }
             }
-            throw new Error(`Invalid subtype '${input.subType}' for topic '${userTopic}'`);
+            throw new Error(`Invalid subtype '${input.subType}' for topic '${userTopic}'. Payload: ${msgString}`);
         }
     };
     await input.client.subscribe(userTopic);

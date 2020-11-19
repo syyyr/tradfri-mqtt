@@ -21,6 +21,18 @@ const args = yargs
         },
     }).argv;
 
+const reset = async (client: MQTT.AsyncMqttClient) => {
+    log(reset, "Resetting light.");
+    await tradfri.send({
+        state: "ON",
+        color_temp: 350,
+        "friendly-name": args["light-name"],
+        type: "set",
+        brightness: 254,
+        client
+    });
+};
+
 const resetter = async (client: MQTT.AsyncMqttClient, lastState: LightState, state: LightState) => {
     log(resetter, `state: ${lastState.state} -> ${state.state}, `
                 + `brightness: ${lastState.brightness} -> ${state.brightness}, `
@@ -34,15 +46,8 @@ const resetter = async (client: MQTT.AsyncMqttClient, lastState: LightState, sta
         return;
     }
 
-    log(resetter, "The light turned on with non-default brightness/color_temp, resetting...");
-    await tradfri.send({
-        state: "ON",
-        color_temp: 350,
-        "friendly-name": args["light-name"],
-        type: "set",
-        brightness: 254,
-        client
-    });
+    log(resetter, "The light turned on with non-default brightness/color_temp.");
+    reset(client);
 };
 
 const stateEqual = (a: LightState, b: LightState) => a.brightness === b.brightness && a.color_temp === b.color_temp && a.state === b.state;
@@ -92,6 +97,19 @@ const main = async () => {
     }, 10000);
     await firstStatePromise;
     global.clearTimeout(firstStateWaiter);
+
+    log(main, "Subscribing to device announces...");
+    await tradfri.subscribe({
+        client,
+        "friendly-name": subTo,
+        subType: "announce",
+        callback: () => {
+            log(main, "Device was powered on.");
+            reset(client);
+        }
+    });
+    log(main, "Subscribed.");
+
     log(main, "Listening for events...");
 };
 
