@@ -86,7 +86,12 @@ const main = async () => {
         "friendly-name": "ikea",
         client
     });
+    const firstStateWaiter = global.setTimeout(() => {
+        log(main, "Couldn't retrieve first state. Exiting.");
+        process.exit(1);
+    }, 10000);
     await firstStatePromise;
+    global.clearTimeout(firstStateWaiter);
     log(main, "Listening for events...");
 };
 
