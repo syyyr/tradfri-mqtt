@@ -33,20 +33,17 @@ const reset = async (client: MQTT.AsyncMqttClient) => {
     });
 };
 
-const resetter = async (client: MQTT.AsyncMqttClient, lastState: LightState, state: LightState) => {
-    log(resetter, `state: ${lastState.state} -> ${state.state}, `
-                + `brightness: ${lastState.brightness} -> ${state.brightness}, `
-                + `color_temp: ${lastState.color_temp} -> ${state.color_temp}`);
+const stateHandler = async (client: MQTT.AsyncMqttClient, lastState: LightState, state: LightState) => {
     if (!(lastState.state === "OFF" && state.state === "ON")) {
-        log(resetter, "Ignoring: the light didn't turn on.");
+        log(stateHandler, "Ignoring: the light didn't turn on.");
         return;
     }
     if (state.brightness === 254 && state.color_temp === 350) {
-        log(resetter, "Ignoring: the light is in default state.");
+        log(stateHandler, "Ignoring: the light is in default state.");
         return;
     }
 
-    log(resetter, "The light turned on with non-default brightness/color_temp.");
+    log(stateHandler, "The light turned on with non-default brightness/color_temp.");
     reset(client);
 };
 
@@ -79,8 +76,10 @@ const main = async () => {
                 return;
             }
 
-            log(main, "Got new light state.");
-            await resetter(client, lastState, state);
+            log(main, `New state: ${lastState.state} -> ${state.state}, `
+                    + `brightness: ${lastState.brightness} -> ${state.brightness}, `
+                    + `temp: ${lastState.color_temp} -> ${state.color_temp}`);
+            await stateHandler(client, lastState, state);
             lastState = state;
         }
     }));
