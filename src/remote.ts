@@ -22,37 +22,37 @@ const args = yargs
         },
     }).argv;
 
-const brightnessUp = (oldState: LightState) => {
-    const newState = {...oldState};
-    // This could use a switch integral division, but this is much clearer...
-    if (oldState.brightness > 0) {
-        newState.brightness = 85;
+const levels: [LightState, LightState, LightState] = [
+    {
+        brightness: 85,
+        color_temp: 500,
+        state: "ON"
+    },
+    {
+        brightness: 170,
+        color_temp: 400,
+        state: "ON"
+    },
+    {
+        brightness: 254,
+        color_temp: 350,
+        state: "ON"
     }
-    if (oldState.brightness >= 85) {
-        newState.brightness = 170;
-    }
-    if (oldState.brightness >= 170) {
-        newState.brightness = 254;
-    }
+];
 
-    return newState;
-}
+// The levels are as follows:
+// 0...85...170...254
+//|___0_|___1_|___2_|
 
-const brightnessDown = (oldState: LightState) => {
-    const newState = {...oldState};
-    // This could use a switch integral division, but this is much clearer...
-    if (oldState.brightness > 0) {
-        newState.brightness = 85;
+const getLevel = (state: LightState): 0 | 1 | 2 => {
+    if (state.brightness <= 85) {
+        return 0;
     }
-    if (oldState.brightness > 85) {
-        newState.brightness = 85;
+    if (state.brightness <= 170) {
+        return 1;
     }
-    if (oldState.brightness > 170) {
-        newState.brightness = 170;
-    }
-
-    return newState;
-}
+    return 2;
+};
 
 const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
     tradfri.send({
@@ -74,28 +74,33 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
             client,
             subType: "light",
             "friendly-name": "ikea",
-            callback: async (state) => {
+            callback: (state) => {
                 // Need an IIFE here, so that the promise always gets resolved
-                (async () => {
+                (() => {
                     sub.unsubscribe();
                     if (state.state === "OFF") {
-                        log(processAction, "Light is off, not doing anything.");
+                        log(changeBrightness, "Light is off, not doing anything.");
                         return;
                     }
 
-                    const newState = action === Action.BrightnessUp ? brightnessUp(state) : brightnessDown(state);
-                    if (newState.brightness === state.brightness) {
-                        log(processAction, `Brightness is already at ${newState.brightness}, not doing anything.`);
+                    const currentLevel = getLevel(state);
+                    if (
+                        (action === Action.BrightnessDown && currentLevel === 0) ||
+                        (action === Action.BrightnessUp && currentLevel === 2)
+                    ) {
+                        log(changeBrightness, `Brightness is already at level ${currentLevel}, not doing anything.`);
                         return;
                     }
 
-                    await tradfri.send({
+                    const newLevel = action === Action.BrightnessUp ? currentLevel + 1 : currentLevel - 1
+
+                    log(changeBrightness, `Changing brightness to level ${newLevel} (brightness: ${levels[newLevel].brightness}, temp: ${levels[newLevel].color_temp}).`);
+                    tradfri.send({
                         type: "set",
                         client,
                         "friendly-name": "ikea",
-                        ...newState
+                        ...levels[newLevel]
                     });
-                    log(processAction, `Changing brightness to ${newState.brightness}.`);
                 })();
                 resolve();
             }
@@ -116,7 +121,7 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
             break;
         case Action.BrightnessUp:
         case Action.BrightnessDown:
-            changeBrightness(client, action);
+            await changeBrightness(client, action);
             break;
         case Action.BrightnessUpHold:
             ringPhone();
