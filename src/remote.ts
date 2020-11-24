@@ -24,7 +24,7 @@ const args = yargs
 
 const levels: [LightState, LightState, LightState] = [
     {
-        brightness: 85,
+        brightness: 60,
         color_temp: 500,
         state: "ON"
     },
@@ -45,10 +45,10 @@ const levels: [LightState, LightState, LightState] = [
 //|___0_|___1_|___2_|
 
 const getLevel = (state: LightState): 0 | 1 | 2 => {
-    if (state.brightness <= 85) {
+    if (state.brightness <= levels[0].brightness) {
         return 0;
     }
-    if (state.brightness <= 170) {
+    if (state.brightness <= levels[1].brightness) {
         return 1;
     }
     return 2;
