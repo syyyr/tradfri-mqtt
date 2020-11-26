@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && node build/main.js"
+    "remote": "nodemon -w src/ -e ts  --exec 'tsc && node build/remote.js -a 192.168.0.248:1883 -n remote || true'",
+    "light-resetter": "nodemon -w src/ -e ts  --exec 'tsc && node build/light-resetter.js -a 192.168.0.248:1883 -n ikea || true'"
   },
   "author": "",
   "license": "ISC",
