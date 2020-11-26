@@ -12,7 +12,11 @@ type LightState = {
     color_temp: number;
 }
 
-type SendArgs = MQTTVars & ((LightState & {type: "set"}) | {type: "get"});
+type SendArgs = MQTTVars & (
+    ({type: "set"} & LightState) |
+    {type: "get"} |
+    ({type: "tradfri"} & {msg: string})
+);
 type SubscribeArgs = MQTTVars & ({
     subType: "remote";
     callback: (action: Action) => void;
@@ -22,6 +26,9 @@ type SubscribeArgs = MQTTVars & ({
 } | {
     subType: "announce";
     callback: () => void;
+} | {
+    subType: "tradfri";
+    callback: (msg: string) => void;
 });
 
 enum Action {
@@ -88,26 +95,41 @@ const send = async (input: SendArgs) => {
         case "get":
             message = {
                 state: ""
-            }
+            };
+            break;
+        case "tradfri":
+            message = input.msg;
             break;
     }
 
-    await input.client.publish(`zigbee2mqtt/${input["friendly-name"]}/${input.type}`, JSON.stringify(message));
+    const topic = (() => {
+        switch (input.type) {
+            case "get":
+            case "set":
+                return `zigbee2mqtt/${input["friendly-name"]}/${input.type}`;
+            case "tradfri":
+                return `tradfri/${input["friendly-name"]}`;
+        }
+    })();
+
+    await input.client.publish(topic, JSON.stringify(message));
 };
 
 const convertSubType = (input: SubscribeArgs["subType"], friendlyName: SubscribeArgs["friendly-name"]): string => {
     switch (input) {
         case "remote":
-            return `${friendlyName}/action`;
+            return `zigbee2mqtt/${friendlyName}/action`;
         case "light":
-            return `${friendlyName}`;
+            return `zigbee2mqtt/${friendlyName}`;
         case "announce":
-            return `bridge/log`;
+            return `zigbee2mqtt/bridge/log`;
+        case "tradfri":
+            return `tradfri/${friendlyName}`;
     }
 };
 
 const subscribe = async (input: SubscribeArgs) => {
-    const userTopic = `zigbee2mqtt/${convertSubType(input.subType, input["friendly-name"])}`;
+    const userTopic = `${convertSubType(input.subType, input["friendly-name"])}`;
 
     const callback = (topic: string, msg: Buffer) => {
         if (topic === userTopic) {
@@ -145,8 +167,19 @@ const subscribe = async (input: SubscribeArgs) => {
                     }
                     // Ignore other non-announce stuff
                     return;
+                case "tradfri":
+                    let msg;
+                    try {
+                        msg = JSON.parse(msgString);
+                    } catch (err) {
+                        break;
+                    }
+                    if (typeof msg === "string" ) {
+                        input.callback(msg);
+                        return;
+                    }
             }
-            throw new Error(`Invalid subtype '${input.subType}' for topic '${userTopic}'. Payload: ${msgString}`);
+            throw new Error(`Invalid subtype '${input.subType}' for topic '${userTopic}'. Payload: '${msgString}'`);
         }
     };
     await input.client.subscribe(userTopic);
