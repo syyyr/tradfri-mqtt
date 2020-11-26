@@ -76,23 +76,31 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
             "friendly-name": "ikea",
             callback: (state) => {
                 // Need an IIFE here, so that the promise always gets resolved
-                (() => {
+                (async () => {
                     sub.unsubscribe();
+                    let newLevel;
                     if (state.state === "OFF") {
-                        log(changeBrightness, "Light is off, not doing anything.");
-                        return;
-                    }
+                        log(changeBrightness, "Light is off.");
+                        // Disable light_resetter
+                        await tradfri.send({
+                            client,
+                            type: "tradfri",
+                            msg: "supress-next",
+                            "friendly-name": "light-resetter"
+                        });
+                        newLevel = 0;
+                    } else {
+                        const currentLevel = getLevel(state);
+                        if (
+                            (action === Action.BrightnessDown && currentLevel === 0) ||
+                            (action === Action.BrightnessUp && currentLevel === 2)
+                        ) {
+                            log(changeBrightness, `Brightness is already at level ${currentLevel}, not doing anything.`);
+                            return;
+                        }
 
-                    const currentLevel = getLevel(state);
-                    if (
-                        (action === Action.BrightnessDown && currentLevel === 0) ||
-                        (action === Action.BrightnessUp && currentLevel === 2)
-                    ) {
-                        log(changeBrightness, `Brightness is already at level ${currentLevel}, not doing anything.`);
-                        return;
+                        newLevel = action === Action.BrightnessUp ? currentLevel + 1 : currentLevel - 1
                     }
-
-                    const newLevel = action === Action.BrightnessUp ? currentLevel + 1 : currentLevel - 1
 
                     log(changeBrightness, `Changing brightness to level ${newLevel} (brightness: ${levels[newLevel].brightness}, temp: ${levels[newLevel].color_temp}).`);
                     tradfri.send({
