@@ -142,8 +142,9 @@ const subscribe = async (input: SubscribeArgs) => {
 
                     if (isAnnounce(announceObj)) {
                         input.callback();
-                        return;
                     }
+                    // Ignore other non-announce stuff
+                    return;
             }
             throw new Error(`Invalid subtype '${input.subType}' for topic '${userTopic}'. Payload: ${msgString}`);
         }
