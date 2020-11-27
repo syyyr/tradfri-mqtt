@@ -58,7 +58,7 @@ const main = async () => {
     log(main, `Subscribing to '${subTo}'...`);
     let lastState: LightState | undefined;
     let supressNext = false;
-    let firstStatePromise = new Promise(async (resolve) => await tradfri.subscribe({
+    let firstStatePromise = new Promise<void>(async (resolve) => await tradfri.subscribe({
         client,
         "friendly-name": subTo,
         subType: "light",

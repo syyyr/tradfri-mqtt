@@ -69,7 +69,7 @@ const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
 const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.BrightnessUp | Action.BrightnessDown) => {
     // This promise serves the purpose of synchronizing everything. I need to wait until I get the response
     // from the subscription.
-    await new Promise(async (resolve) => {
+    await new Promise<void>(async (resolve) => {
         const sub = await tradfri.subscribe({
             client,
             subType: "light",
