@@ -15,7 +15,9 @@ if (typeof process.env.BTADDRESS !== "undefined") {
         ];
 
         const startTime = Date.now();
-        const res = child_process.spawnSync(command, args);
+        const res = child_process.spawnSync(command, args, {
+            timeout: 5000
+        });
         const duration = Date.now() - startTime;
         if (duration < 2000) {
             log(ringPhone, `WARNING: ${command} ended in ${duration / 1000} seconds, it might have failed.`);
