@@ -19,7 +19,7 @@ type SendArgs = MQTTVars & (
 );
 type SubscribeArgs = MQTTVars & ({
     subType: "remote";
-    callback: (action: Action) => void;
+    callback: (action: ActionType) => void;
 } | {
     subType: "light";
     callback: (state: LightState) => void;
@@ -31,7 +31,7 @@ type SubscribeArgs = MQTTVars & ({
     callback: (msg: string) => void;
 });
 
-enum Action {
+enum ActionType {
     Toggle = "toggle",
     // WARNING: don't use this one, because it always fires after Toggle and there's no "release event"
     __ToggleHold = "toggle_hold",
@@ -50,6 +50,10 @@ enum Action {
 
 };
 
+type Action = {
+    action: ActionType;
+}
+
 type Announce = {
     message: "announce";
     meta: {
@@ -58,8 +62,8 @@ type Announce = {
     type: "device_announced";
 }
 
-const isAction = (toCheck: string): toCheck is Action => {
-    return Object.values(Action).includes(toCheck as Action);
+const isAction = (toCheck: Action): toCheck is Action => {
+    return typeof toCheck.action === "string" && Object.values(ActionType).includes(toCheck.action);
 };
 
 const isLightState = (toCheck: Object): toCheck is LightState => {
@@ -118,7 +122,7 @@ const send = async (input: SendArgs) => {
 const convertSubType = (input: SubscribeArgs["subType"], friendlyName: SubscribeArgs["friendly-name"]): string => {
     switch (input) {
         case "remote":
-            return `zigbee2mqtt/${friendlyName}/action`;
+            return `zigbee2mqtt/${friendlyName}`;
         case "light":
             return `zigbee2mqtt/${friendlyName}`;
         case "announce":
@@ -136,8 +140,14 @@ const subscribe = async (input: SubscribeArgs) => {
             const msgString = msg.toString();
             switch (input.subType) {
                 case "remote":
-                    if (isAction(msgString)) {
-                        input.callback(msgString);
+                    let actionObj;
+                    try {
+                        actionObj = JSON.parse(msgString);
+                    } catch (err) {
+                        break;
+                    }
+                    if (isAction(actionObj)) {
+                        input.callback(actionObj.action);
                         return;
                     }
                     break;
@@ -192,7 +202,7 @@ const subscribe = async (input: SubscribeArgs) => {
     }
 };
 
-export {MQTTVars, Action, LightState};
+export {MQTTVars, ActionType as Action, LightState};
 
 export default {
     createClient,
