@@ -50,10 +50,6 @@ enum ActionType {
 
 };
 
-type Action = {
-    action: ActionType;
-}
-
 type Announce = {
     message: "announce";
     meta: {
@@ -62,8 +58,27 @@ type Announce = {
     type: "device_announced";
 }
 
-const isAction = (toCheck: Action): toCheck is Action => {
-    return typeof toCheck.action === "string" && Object.values(ActionType).includes(toCheck.action);
+type RemotePayload = {
+    battery: number,
+    linkquality: number
+    update: {
+        state: string
+    }
+    update_available: boolean,
+    action?: ActionType
+}
+
+const isRemotePayload = (toCheck: any): toCheck is RemotePayload => {
+    return typeof toCheck === "object" &&
+        typeof toCheck.battery === "number" &&
+        typeof toCheck.linkquality === "number" &&
+        typeof toCheck.update === "object" &&
+        typeof toCheck.update.state === "string" &&
+        typeof toCheck.update_available === "boolean";
+}
+
+const isAction = (toCheck: any): toCheck is ActionType => {
+    return typeof toCheck === "string" && Object.values(ActionType).includes(toCheck as ActionType);
 };
 
 const isLightState = (toCheck: Object): toCheck is LightState => {
@@ -146,8 +161,10 @@ const subscribe = async (input: SubscribeArgs) => {
                     } catch (err) {
                         break;
                     }
-                    if (isAction(actionObj)) {
-                        input.callback(actionObj.action);
+                    if (isRemotePayload(actionObj)) {
+                        if (isAction(actionObj.action)) {
+                            input.callback(actionObj.action);
+                        }
                         return;
                     }
                     break;
