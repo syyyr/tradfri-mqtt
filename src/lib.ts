@@ -230,7 +230,7 @@ const levels: [LightState, LightState, LightState] = [
         state: "ON"
     },
     {
-        brightness: 170,
+        brightness: 150,
         color_temp: 400,
         state: "ON"
     },
