@@ -1,7 +1,7 @@
 import yargs from "yargs"
 import MQTT from "async-mqtt"
 import log from "./log"
-import tradfri, {Action, LightState} from "./lib"
+import tradfri, {Action, LightLevels, LightState} from "./lib"
 import ringPhone from "./ring_phone"
 
 const args = yargs
@@ -22,33 +22,11 @@ const args = yargs
         },
     }).argv;
 
-const levels: [LightState, LightState, LightState] = [
-    {
-        brightness: 1,
-        color_temp: 500,
-        state: "ON"
-    },
-    {
-        brightness: 170,
-        color_temp: 400,
-        state: "ON"
-    },
-    {
-        brightness: 254,
-        color_temp: 350,
-        state: "ON"
-    }
-];
-
-// The levels are as follows:
-// 0....1...170...254
-//|___0_|___1_|___2_|
-
 const getLevel = (state: LightState): 0 | 1 | 2 => {
-    if (state.brightness <= levels[0].brightness) {
+    if (state.brightness <= LightLevels[0].brightness) {
         return 0;
     }
-    if (state.brightness <= levels[1].brightness) {
+    if (state.brightness <= LightLevels[1].brightness) {
         return 1;
     }
     return 2;
@@ -102,12 +80,12 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
                         newLevel = action === Action.BrightnessUp ? currentLevel + 1 : currentLevel - 1
                     }
 
-                    log(changeBrightness, `Changing brightness to level ${newLevel} (brightness: ${levels[newLevel].brightness}, temp: ${levels[newLevel].color_temp}).`);
+                    log(changeBrightness, `Changing brightness to level ${newLevel} (brightness: ${LightLevels[newLevel].brightness}, temp: ${LightLevels[newLevel].color_temp}).`);
                     tradfri.send({
                         type: "set",
                         client,
                         "friendly-name": "ikea",
-                        ...levels[newLevel]
+                        ...LightLevels[newLevel]
                     });
                 })();
                 resolve();

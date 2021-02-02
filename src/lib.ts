@@ -219,7 +219,29 @@ const subscribe = async (input: SubscribeArgs) => {
     }
 };
 
-export {MQTTVars, ActionType as Action, LightState};
+
+// The levels are as follows:
+// 0....1...170...254
+//|___0_|___1_|___2_|
+const levels: [LightState, LightState, LightState] = [
+    {
+        brightness: 1,
+        color_temp: 500,
+        state: "ON"
+    },
+    {
+        brightness: 170,
+        color_temp: 400,
+        state: "ON"
+    },
+    {
+        brightness: 254,
+        color_temp: 350,
+        state: "ON"
+    }
+];
+
+export {levels as LightLevels, MQTTVars, ActionType as Action, LightState};
 
 export default {
     createClient,
