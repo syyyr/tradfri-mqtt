@@ -72,9 +72,7 @@ const isRemotePayload = (toCheck: any): toCheck is RemotePayload => {
     return typeof toCheck === "object" &&
         typeof toCheck.battery === "number" &&
         typeof toCheck.linkquality === "number" &&
-        typeof toCheck.update === "object" &&
-        typeof toCheck.update.state === "string" &&
-        typeof toCheck.update_available === "boolean";
+        typeof toCheck.action === "string";
 }
 
 const isAction = (toCheck: any): toCheck is ActionType => {
