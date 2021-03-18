@@ -25,12 +25,12 @@ if (typeof process.env.BTADDRESS !== "undefined") {
         if (res.status === 0) {
             log(ringPhone, "Phone rang successfully.");
         } else {
-        }
             log(ringPhone, "Phone ringing was unsuccessful. Info below.");
             log(ringPhone, `command: ${command} ${args.join(" ")}`);
             log(ringPhone, `status: ${res.status}`);
             log(ringPhone, `stdout: ${res.stdout}`);
             log(ringPhone, `stderr: ${res.stderr}`);
+        }
     };
     log(ringPhone, `Phone ringing enabled! BTADDRESS=${process.env.BTADDRESS}`);
 } else {
