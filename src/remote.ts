@@ -3,6 +3,7 @@ import MQTT from "async-mqtt"
 import log from "./log"
 import tradfri, {Action, LightLevels, LightState} from "./lib"
 import ringPhone from "./ring_phone"
+import volume from "./media"
 
 const args = yargs
     .usage("Usage: tradfri-remote -n <remote-name>")
@@ -111,6 +112,12 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
             break;
         case Action.BrightnessUpHold:
             ringPhone();
+            break;
+        case Action.Left:
+            volume("-10");
+            break;
+        case Action.Right:
+            volume("+10");
             break;
         default:
             log(processAction, `Ignoring '${action}'.`);
