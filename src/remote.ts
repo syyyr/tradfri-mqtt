@@ -108,6 +108,7 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
 const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
     switch (action) {
         case Action.Toggle:
+        case Action.Left:
             toggleLights(client, action);
             break;
         case Action.On:
@@ -118,9 +119,6 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
             break;
         case Action.BrightnessUpHold:
             ringPhone();
-            break;
-        case Action.Left:
-            volume("-10");
             break;
         case Action.Right:
             volume("+10");
