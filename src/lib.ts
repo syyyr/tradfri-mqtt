@@ -47,7 +47,8 @@ enum ActionType {
     BrightnessUpRelease = "brightness_up_release",
     BrightnessDownHold = "brightness_down_hold",
     BrightnessDownRelease ="brightness_down_release",
-
+    On ="on",
+    Off ="off",
 };
 
 type Announce = {
