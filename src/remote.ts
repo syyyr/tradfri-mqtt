@@ -22,14 +22,17 @@ const args = yargs
         },
     }).argv;
 
-const getLevel = (state: LightState): 0 | 1 | 2 => {
+const getLevel = (state: LightState): 0 | 1 | 2 | 3 => {
     if (state.brightness <= LightLevels[0].brightness) {
         return 0;
     }
     if (state.brightness <= LightLevels[1].brightness) {
         return 1;
     }
-    return 2;
+    if (state.brightness <= LightLevels[2].brightness && state.color_temp > 250) {
+        return 2;
+    }
+    return 3;
 };
 
 const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
@@ -44,7 +47,7 @@ const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
     log(processAction, "Lights toggled.");
 };
 
-const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.BrightnessUp | Action.BrightnessDown | Action.On | Action.Off) => {
+const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.BrightnessUp | Action.BrightnessDown | Action.Right | Action.On | Action.Off) => {
     // This promise serves the purpose of synchronizing everything. I need to wait until I get the response
     // from the subscription.
     await new Promise<void>(async (resolve) => {
@@ -66,22 +69,28 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
                             msg: "supress-next",
                             "friendly-name": "light-resetter"
                         });
-                        if (action === Action.BrightnessDown || action === Action.Off) {
-                            newLevel = 0;
-                        } else {
+                        if (action === Action.Right) {
+                            newLevel = 3;
+                        } else if (action === Action.BrightnessUp || action === Action.On) {
                             newLevel = 2;
+                        } else {
+                            newLevel = 0;
                         }
                     } else {
                         const currentLevel = getLevel(state);
                         if (
                             ((action === Action.BrightnessDown || action === Action.Off) && currentLevel === 0) ||
-                            ((action === Action.BrightnessUp || action === Action.On) && currentLevel === 2)
+                            ((action === Action.BrightnessUp || action === Action.On) && currentLevel >= 2) ||
+                            ((action === Action.Right) && currentLevel === 3)
                         ) {
                             log(changeBrightness, `Brightness is already at level ${currentLevel}, not doing anything.`);
                             return;
                         }
 
-                        newLevel = (action === Action.BrightnessUp || action === Action.On) ? currentLevel + 1 : currentLevel - 1
+                        newLevel =
+                            (action === Action.Right) ? 3 :
+                            (action === Action.BrightnessUp || action === Action.On) ? currentLevel + 1 :
+                            currentLevel - 1
                     }
 
                     log(changeBrightness, `Changing brightness to level ${newLevel} (brightness: ${LightLevels[newLevel].brightness}, temp: ${LightLevels[newLevel].color_temp}).`);
@@ -114,6 +123,7 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
         case Action.Off:
         case Action.BrightnessUp:
         case Action.BrightnessDown:
+        case Action.Right:
             await changeBrightness(client, action);
             break;
         case Action.BrightnessUpHold:

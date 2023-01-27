@@ -222,7 +222,7 @@ const subscribe = async (input: SubscribeArgs) => {
 // The levels are as follows:
 // 0....1...170...254
 //|___0_|___1_|___2_|
-const levels: [LightState, LightState, LightState] = [
+const levels: [LightState, LightState, LightState, LightState] = [
     {
         brightness: 2,
         color_temp: 500,
@@ -236,6 +236,11 @@ const levels: [LightState, LightState, LightState] = [
     {
         brightness: 254,
         color_temp: 350,
+        state: "ON"
+    },
+    {
+        brightness: 254,
+        color_temp: 250,
         state: "ON"
     }
 ];
