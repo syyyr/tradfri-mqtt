@@ -14,6 +14,7 @@ type LightState = {
 
 type SendArgs = MQTTVars & (
     ({type: "set"} & LightState) |
+    ({type: "plug"}) |
     {type: "get"} |
     ({type: "tradfri"} & {msg: string})
 );
@@ -43,10 +44,9 @@ enum ActionType {
     ArrowLeftRelease = "arrow_left_release",
     ArrowRightHold = "arrow_right_hold",
     ArrowRightRelease = "arrow_right_release",
-    BrightnessUpHold = "brightness_up_hold",
-    BrightnessUpRelease = "brightness_up_release",
-    BrightnessDownHold = "brightness_down_hold",
-    BrightnessDownRelease ="brightness_down_release",
+    BrightnessUpHold = "brightness_move_up",
+    BrightnessDownHold = "brightness_move_down",
+    BrightnessRelease ="brightness_stop",
     On ="on",
     Off ="off",
 };
@@ -110,6 +110,11 @@ const send = async (input: SendArgs) => {
                 color_temp: input.color_temp
             };
             break;
+        case "plug":
+            message = {
+                state: "TOGGLE"
+            };
+            break;
         case "get":
             message = {
                 state: ""
@@ -125,6 +130,8 @@ const send = async (input: SendArgs) => {
             case "get":
             case "set":
                 return `zigbee2mqtt/${input["friendly-name"]}/${input.type}`;
+            case "plug":
+                return `zigbee2mqtt/${input["friendly-name"]}/set`;
             case "tradfri":
                 return `tradfri/${input["friendly-name"]}`;
         }

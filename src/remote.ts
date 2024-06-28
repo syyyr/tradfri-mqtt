@@ -127,7 +127,12 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
             await changeBrightness(client, action);
             break;
         case Action.BrightnessUpHold:
-            ringPhone();
+            log(processAction, "Toggling plug.");
+            await tradfri.send({
+                type: "plug",
+                "friendly-name": "vetrak",
+                client
+            });
             break;
         default:
             log(processAction, `Ignoring '${action}'.`);
