@@ -103,34 +103,6 @@ const main = async () => {
     }, 10000);
     await firstStatePromise;
     global.clearTimeout(firstStateWaiter);
-
-    log(main, "Subscribing to device announces...");
-    await tradfri.subscribe({
-        client,
-        "friendly-name": subTo,
-        subType: "announce",
-        callback: () => {
-            log(main, "Device was powered on.");
-            reset(client);
-        }
-    });
-    log(main, "Subscribed.");
-    log(main, "Subscribing to generic messages.");
-    await tradfri.subscribe({
-        client,
-        "friendly-name": "light-resetter",
-        subType: "tradfri",
-        callback: (msg: string) => {
-            switch (msg) {
-                case "supress-next":
-                    log(main, "Next light state will be ignored.");
-                    supressNext = true;
-                    break;
-                default:
-                    log(main, `Message not understood: '${msg}'`);
-            }
-        }
-    });
     log(main, "Subscribed.");
 
     log(main, "Listening for events...");
