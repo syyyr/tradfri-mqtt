@@ -123,6 +123,9 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
         case Action.Off:
         case Action.BrightnessUp:
         case Action.BrightnessDown:
+        case Action.BrightnessUpHold:
+            await changeBrightness(client, action);
+            break;
         case Action.Right:
             log(processAction, "Toggling plug.");
             await tradfri.send({
@@ -130,9 +133,6 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
                 "friendly-name": "vetrak",
                 client
             });
-            break;
-        case Action.BrightnessUpHold:
-            await changeBrightness(client, action);
             break;
         default:
             log(processAction, `Ignoring '${action}'.`);
