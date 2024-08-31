@@ -47,7 +47,7 @@ const toggleLights = (client: MQTT.AsyncMqttClient, _action: Action) => {
     log(processAction, "Lights toggled.");
 };
 
-const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.BrightnessUp | Action.BrightnessDown | Action.Right | Action.On | Action.Off) => {
+const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.BrightnessUp | Action.BrightnessDown | Action.BrightnessUpHold | Action.On | Action.Off) => {
     // This promise serves the purpose of synchronizing everything. I need to wait until I get the response
     // from the subscription.
     await new Promise<void>(async (resolve) => {
@@ -69,7 +69,7 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
                             msg: "supress-next",
                             "friendly-name": "light-resetter"
                         });
-                        if (action === Action.Right) {
+                        if (action === Action.BrightnessUpHold) {
                             newLevel = 3;
                         } else if (action === Action.BrightnessUp || action === Action.On) {
                             newLevel = 2;
@@ -81,14 +81,14 @@ const changeBrightness = async (client: MQTT.AsyncMqttClient, action: Action.Bri
                         if (
                             ((action === Action.BrightnessDown || action === Action.Off) && currentLevel === 0) ||
                             ((action === Action.BrightnessUp || action === Action.On) && currentLevel >= 2) ||
-                            ((action === Action.Right) && currentLevel === 3)
+                            ((action === Action.BrightnessUpHold) && currentLevel === 3)
                         ) {
                             log(changeBrightness, `Brightness is already at level ${currentLevel}, not doing anything.`);
                             return;
                         }
 
                         newLevel =
-                            (action === Action.Right) ? 3 :
+                            (action === Action.BrightnessUpHold) ? 3 :
                             (action === Action.BrightnessUp || action === Action.On) ? currentLevel + 1 :
                             currentLevel - 1
                     }
@@ -124,15 +124,15 @@ const processAction = async (client: MQTT.AsyncMqttClient, action: Action) => {
         case Action.BrightnessUp:
         case Action.BrightnessDown:
         case Action.Right:
-            await changeBrightness(client, action);
-            break;
-        case Action.BrightnessUpHold:
             log(processAction, "Toggling plug.");
             await tradfri.send({
                 type: "plug",
                 "friendly-name": "vetrak",
                 client
             });
+            break;
+        case Action.BrightnessUpHold:
+            await changeBrightness(client, action);
             break;
         default:
             log(processAction, `Ignoring '${action}'.`);
